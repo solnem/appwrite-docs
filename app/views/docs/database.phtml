@@ -196,7 +196,7 @@ func main() async throws {
     <p>You can only query correctly indexed queries. You can easily add new indexes from both the Appwrite console or one of the <a href="/docs/sdks#server" target="_blank">server SDKs</a>. Appwrite uses this limitation to enforce optimized queries for maximum performance and scalability of your collection. You can learn more about it on the <a href="/docs/database#indexes">Appwrite Indexes</a> section.</p>
 </div>
 <p>
-    To find specific documents in a collection, pass an array of query strings as a parameter to the <a href="/docs/server/database#databaseListDocuments">listDocuments</a> endpoint. The SDKs provide a <b>Query</b> class to make query building simpler:
+    To find specific documents in a collection, pass an array of queries as a parameter to the <a href="/docs/server/database#databaseListDocuments">listDocuments</a> endpoint. The SDKs provide a <b>Query</b> class to make query building simpler:
 </p>
 <ul class="phases clear" data-ui-phases>
     <li>
@@ -324,7 +324,7 @@ func main() async throws{
     </tbody>
 </table>
 
-<p>Each query string is logically separated via AND. For OR logic, pass multiple values, separated by commas:</p>
+<p>Each <b>Query</b> is logically separated via AND. To apply the OR logic on a specific attribute, pass an array of multiple values, separated by commas, inside of a <b>Query</b>:</p>
 <ul class="phases clear" data-ui-phases>
     <li>
         <h3>Web</h3>
@@ -417,9 +417,117 @@ func main() async throws {
         </div>
     </li>
 </ul>
+<p>This example logically reads as follows:<br>(title == 'Avatar' OR title == 'Lord of the Rings') AND year &gt; 1999</p>
+<div class="notice">
+  <h2>Index Attribute Composition</h2>
+  <p>When performing a query against multiple attributes, a single index containing all of those attributes is required. In the example above, a single index with <b>both</b> <span class="tag">title</span> and <span class="tag">year</span> is queried.</p>
+</div>
+<p>In addition to the aforementioned way of working with queries, the OR logic can also be applied to more than one attribute by executing the listDocuments call several times.</p>
+<ul class="phases clear" data-ui-phases>
+    <li>
+        <h3>Web</h3>
+        <div class="ide" data-lang="javascript" data-lang-label="Web SDK">
+            <pre class="line-numbers"><code class="prism language-javascript" data-prism>import { Query } from "appwrite";
 
-<p>When performing a query against multiple attributes, a single index with all queries attributes is required. In the example above, a single index with <b>both</b> <span class="tag">title</span> and <span class="tag">year</span> is queried.</p>
+let avatarDocs = sdk.database.listDocuments('movies', [
+    Query.equal('title', 'Avatar')
+]);
+let scifiDocs = sdk.database.listDocuments('movies', [
+    Query.equal('genre', 'sci-fi')
+]);
 
+// do something with the results (e.g., combine them)
+</code></pre>
+        </div>
+    </li>
+    <li>
+        <h3>Flutter</h3>
+        <div class="ide" data-lang="dart" data-lang-label="Flutter SDK">
+            <pre class="line-numbers"><code class="prism language-dart" data-prism>import 'package:appwrite/appwrite.dart';
+
+void main() async {
+    final client = Client();
+    final database = Database(client);
+    try {
+        final avatarDocs = await database.listDocuments(
+            collectionId: 'movies',
+            queries: [Query.equal('title', 'Avatar')]);
+        final scifiDocs = await database.listDocuments(
+            collectionId: 'movies',
+            queries: [Query.equal('genre', 'sci-fi')]);
+        
+        // do something with the results (e.g., combine them)
+    } on AppwriteException catch(e) {
+        print(e);
+    }
+}
+</code></pre>
+        </div>
+    </li>
+    <li>
+        <h3>Android</h3>
+        <div class="ide" data-lang="kotlin" data-lang-label="Android SDK">
+            <pre class="line-numbers"><code class="prism language-kotlin" data-prism>import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import io.appwrite.Client
+import io.appwrite.services.Database
+import io.appwrite.Query
+
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val client = Client(applicationContext)
+            .setEndpoint("https://[HOSTNAME_OR_IP]/v1") // Your API Endpoint
+            .setProject("5df5acd0d48c2") // Your project ID
+
+        val database = Database(client)
+
+        GlobalScope.launch {
+            val avatarResponse = database.listDocuments(
+                collectionId = "[COLLECTION_ID]",
+                queries = [Query.equal('title', 'Avatar')],
+            )
+            val scifiResponse = database.listDocuments(
+                collectionId = "[COLLECTION_ID]",
+                queries = [Query.equal('genre', 'sci-fi')],
+            )
+
+            // do something with the results (e.g., combine them)
+        }
+    }
+}</code></pre>
+        </div>
+    </li>
+    <li>
+        <h3>iOS</h3>
+        <div class="ide" data-lang="swift" data-lang-label="Apple SDK">
+            <pre class="line-numbers"><code class="prism language-swift" data-prism>import Appwrite
+
+func main() async throws{
+    let client = Client()
+      .setEndpoint("https://[HOSTNAME_OR_IP]/v1") // Your API Endpoint
+      .setProject("my_project") // Your project ID
+
+    let database = Database(client)
+    let avatarDocs = try await database.listDocuments(
+        collectionId: "[COLLECTION_ID]",
+        queries: [Query.equal('title', 'Avatar')]
+    )
+    let scifiDocs = try await database.listDocuments(
+        collectionId: "[COLLECTION_ID]",
+        queries: [Query.equal('genre', 'sci-fi')]
+    )
+
+    // do something with the results (e.g., combine them)
+}</code></pre>
+        </div>
+    </li>
+</ul>
+<p>Each listDocuments call will continue the desired combination of queries. The aggregated results of these calls are equivalent to the use of several OR operations across multiple attributes.</p>
 <h2><a href="/docs/database#indexes" id="indexes">Indexes</a></h2>
 <p>
     Indexes are used by databases to quickly locate data without having to search through every document for results.
